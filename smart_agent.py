@@ -15,57 +15,58 @@ def phase1(self, state):
     shape = board.board_shape
     actions = []
     liste = []
-    my_cells = board.get_player_pieces_on_board(mcolor)
-    print("my_cells")
-    print(my_cells)
-    ennemy_cells = board.get_player_pieces_on_board(ecolor)
-    print("ennemy_cells")
-    print(ennemy_cells)
-    empty_cases1 = cruise(shape,board)
-    empty_cases2 = cruise2(shape,board)
-    empty_cases3 = next_to_cruise(shape,board)
-    empty_cases4 = corner(shape,board)
-    empty_cases5 = board.get_all_empty_cells_without_center()
-    empty_special = empty_cases1 + empty_cases2 + empty_cases3 + empty_cases4 
-    empty_all = empty_special + empty_cases5
     booleane = False
-    print("empty_cases1")
-    print(empty_cases1)
-    #print(empty_cases2)
-    #print(empty_cases3)
-    #print(empty_cases4)
-    print("empty_all")
-    print(empty_all)
-    if len(empty_all) <= 1:
-        liste.append(empty_all[0])
-        board.fill_cell(empty_all[0],mcolor)
-    else:
-        booleane = True
-        liste.append(empty_all[0])
-        board.fill_cell(empty_all[0],mcolor)
+    my_cells = board.get_player_pieces_on_board(mcolor)
+    #print("my_cells")
+    #print(my_cells)
+    ennemy_cells = board.get_player_pieces_on_board(ecolor)
+    #print("ennemy_cells")
+    #print(ennemy_cells)
+    empty_cases1 = cruise(shape,board)
+    empty_cases2 = cruise2(shape,board,my_cells)
+    if len(my_cells) > 0: 
+        random.shuffle(my_cells)
         av_liste1 = good_emplacement_free1(board,my_cells,ennemy_cells)
-        av_liste2 = good_emplacement_free2(board,mcolor,ecolor)
-        av_liste3 = good_emplacement_free3(board,mcolor,ecolor)
-        av_liste = av_liste1 + av_liste2 + av_liste3
-        print("av_liste")
-        print(av_liste)
-        if len(av_liste) > 0:
-            print("if av_liste")
-            liste.append(av_liste[0])
-            board.fill_cell(av_liste[0],mcolor)
-        else:
+    else:
+        av_liste1 = []
+    av_liste2 = good_emplacement_free2(board,mcolor,ecolor)
+    av_liste3 = good_emplacement_free3(board,mcolor,ecolor)
+    #av_liste = av_liste1 + av_liste2 + av_liste3
+    empty_special = empty_cases1 + empty_cases2 + av_liste3 + av_liste2 + av_liste1
+    empty_all = board.get_all_empty_cells_without_center()
+    # print("empty_special",empty_special)
+    # print("empty_all",empty_all,len(empty_all))
+    if len(empty_special)==0:
+        liste.append(empty_all[0])
+        board.fill_cell(empty_all[0],mcolor)
+        if len(empty_all) > 1 :
             liste.append(empty_all[1])
             board.fill_cell(empty_all[1],mcolor)
+            booleane = True
+    elif len(empty_special)==1:
+        liste.append(empty_special[0])
+        board.fill_cell(empty_special[0],mcolor)
+        if len(empty_all) > 1 :
+            liste.append(empty_all[1])
+            board.fill_cell(empty_all[1],mcolor)
+            booleane = True
+    else:
+        booleane = True
+        liste.append(empty_special[0])
+        board.fill_cell(empty_special[0],mcolor)
+        liste.append(empty_special[1])
+        board.fill_cell(empty_special[1],mcolor)
 
-    print("liste")
-    print(liste)
+
+    # print("liste")
+    # print(liste)
     actions.append(SeegaAction(action_type=SeegaActionType.ADD, to=liste[0]))
-    if booleane :
+    if booleane == True:
         actions.append(SeegaAction(action_type=SeegaActionType.ADD, to=liste[1]))
 
-    print("actions")
-    print(len(actions))
-    print(actions)
+    # print("actions")
+    # print(len(actions))
+    # print(actions)
     return actions        
             
 def cruise(shape,board):
@@ -80,17 +81,21 @@ def cruise(shape,board):
         liste.append((shape[0]//2,shape[1]-1))
     return liste
 
-def cruise2(shape,board):
+def cruise2(shape,board,my_cells):
     liste = []
     center = (shape[0] // 2, shape[1] // 2)
     if board.is_empty_cell((center[0]-1,shape[1]//2)):
-        liste.append((center[0]-1,shape[1]//2))
+        if is_next_to((center[0]-1,shape[1]//2),my_cells)[0]==False:
+            liste.append((center[0]-1,shape[1]//2))
     if board.is_empty_cell((center[0]+1,shape[1]//2)):
-        liste.append((center[0]+1,shape[1]//2))
+        if is_next_to((center[0]+1,shape[1]//2),my_cells)[0]==False:
+            liste.append((center[0]+1,shape[1]//2))
     if board.is_empty_cell((shape[0]//2,center[1]-1)):
-        liste.append((shape[0]//2,center[1]-1))
+        if is_next_to((shape[0]//2,center[1]-1),my_cells)[0]==False:
+            liste.append((shape[0]//2,center[1]-1))
     if board.is_empty_cell((shape[0]//2,center[1]+1)):
-        liste.append((shape[0]//2,center[1]+1))
+        if is_next_to((shape[0]//2,center[1]+1),my_cells)[0]==False:
+            liste.append((shape[0]//2,center[1]+1))
     return liste
 
 def next_to_cruise(shape,board):
@@ -119,13 +124,13 @@ def corner(shape,board):
     return liste
 
 def good_emplacement_free1(board,cells,e_cells):
-    print("free1")
+    # print("free1")
     liste = []
     empty_cells = board.get_all_empty_cells()
-    print("empty_cells")
-    print(empty_cells,cells)
+    # print("empty_cells")
+    # print(empty_cells,cells)
     for i in range(0,len(cells)):
-        print(cells[i])
+        #print(cells[i])
         condition, delta_x, delta_y, to_add = is_next_to(cells[i], e_cells)
         if condition:
             possibilities = [(add_to_tuple(cells[i],to_add[0][0],to_add[0][1])),
@@ -133,12 +138,11 @@ def good_emplacement_free1(board,cells,e_cells):
             for j in range(0, len(empty_cells)):
                 if empty_cells[j] in possibilities and empty_cells[j] != (2,2):
                     liste.append(empty_cells[j])
-    print("free1",liste)
+    # print("free1",liste)
     return liste
-    
-    
+       
 def good_emplacement_free2(board,mcolor,ecolor):
-    print("free2")
+    # print("free2")
     liste = []
     m_cells = board.get_player_pieces_on_board(mcolor)
     e_cells = board.get_player_pieces_on_board(ecolor)
@@ -149,11 +153,11 @@ def good_emplacement_free2(board,mcolor,ecolor):
                 liste.append(empty_cells[i])
             if add_to_tuple(empty_cells[i],0,1) in e_cells and add_to_tuple(empty_cells[i],0,-1) in e_cells:
                 liste.append(empty_cells[i])
-    print("free2", liste)
+    # print("free2", liste)
     return liste
 
 def good_emplacement_free3(board,mcolor,ecolor):
-    print("free3")
+    #print("free3")
     liste = []
     m_cells = board.get_player_pieces_on_board(mcolor)
     e_cells = board.get_player_pieces_on_board(ecolor)
@@ -168,14 +172,13 @@ def good_emplacement_free3(board,mcolor,ecolor):
                 liste.append(empty_cells[i])
             if add_to_tuple(empty_cells[i],0,1) in e_cells and add_to_tuple(empty_cells[i],0,-1) in e_cells and add_to_tuple(empty_cells[i],0,2) in m_cells and add_to_tuple(empty_cells[i],0,-2) in m_cells:
                 liste.append(empty_cells[i])
-    print("free3",liste)
+    #print("free3",liste)
     return liste
 
 def add_to_tuple(cell,a,b):
     return (cell[0]+a,cell[1]+b)
 
 def is_next_to(cell1, e_cells):
-    print("is_next_to")
     if add_to_tuple(cell1,1,0) in e_cells:
         return True, 1, 0, [(2,1), (2,-1)]
     if add_to_tuple(cell1,1,1) in e_cells:
@@ -260,7 +263,7 @@ class AI(Player):
         #print("cutoff",depth)
         if SeegaRules.is_end_game(state) : 
             return True
-        if depth >= 1:
+        if depth >= 3:
             #print("True")
             return True
         return False
@@ -271,7 +274,7 @@ class AI(Player):
     representing the utility function of the board.
     """
     def evaluate(self, state, booleane):
-        print("EVALUATE")
+        #print("EVALUATE")
         this_players_id = self.color.value
         if booleane:
             if state.score.get(this_players_id) == None:
