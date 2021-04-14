@@ -1,3 +1,5 @@
+
+
 from core.player import Player, Color
 from seega.seega_rules import SeegaRules
 from copy import deepcopy
@@ -7,7 +9,7 @@ class AI(Player):
 
     in_hand = 12
     score = 0
-    name = "AlphaBeta"
+    name = "Template"
 
     def __init__(self, color):
         super(AI, self).__init__(color)
@@ -25,30 +27,21 @@ class AI(Player):
     state s.
     """
     def successors(self, state):
-        this_players_id = self.color.value
-        all_possible_actions = SeegaRules.get_player_actions(state, this_players_id) 
-        for action in all_possible_actions : 
-            this_state = deepcopy(state)
-            make_move = SeegaRules.act(this_state, action, this_players_id)
-            if make_move == False : continue
-            yield (action, make_move[0])
+        pass  # TODO replace by your code
 
     """
     The cutoff function returns true if the alpha-beta/minimax
     search has to stop and false otherwise.
     """
     def cutoff(self, state, depth):
-        if SeegaRules.is_end_game(state) : 
-            return True
-        return depth >= 1
+        pass  # TODO replace by your code
 
     """
     The evaluate function must return an integer value
     representing the utility function of the board.
     """
     def evaluate(self, state):
-        this_players_id = self.color.value
-        return state.score.get(this_players_id)
+        pass  # TODO replace by your code
 
     """
     Specific methods for a Seega player (do not modify)
