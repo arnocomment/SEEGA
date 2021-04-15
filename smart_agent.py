@@ -51,11 +51,11 @@ def phase1(self, state):
             board.fill_cell(empty_all[1],mcolor)
             booleane = True
     else:
-        booleane = True
         liste.append(empty_special[0])
         board.fill_cell(empty_special[0],mcolor)
         liste.append(empty_special[1])
         board.fill_cell(empty_special[1],mcolor)
+        booleane = True
 
 
     # print("liste")
@@ -209,10 +209,15 @@ class AI(Player):
         self.player = Color(color.value)
 
     def play(self, state, remain_time):
-        # print("")
-        # print(f"Player {self.position} is playing.")
-        # print("time remain is ", remain_time, " seconds")
-        return minimax_search(state, self)
+        print("")
+        print(f"Player {self.position} is playing.")
+        print("time remain is ", remain_time, " seconds")
+        if state.phase == 1:
+            this_state = deepcopy(state)
+            return phase1(self, this_state)[0]
+        else:
+            action = minimax_search(state, self)
+            return action
 
     """
     The successors function must return (or yield) a list of
@@ -222,38 +227,38 @@ class AI(Player):
     def successors(self, state):
         #print("latest move", state._latest_move)
         this_players_id = self.color.value
-        mcolor = Color(self.color.value)
-        ecolor = Color(-self.color.value)
-        if state.in_hand == 0:
-            state.phase = 2
-        if state.phase == 1:
-            this_state1 = deepcopy(state)
-            this_state2 = deepcopy(state)
-            try :      
-                actions = phase1(self,this_state1)
-                if len(actions) == 2 :
-                    yield(actions[0], this_state1)
-                    yield(actions[1], this_state1)
-                else:
-                    yield(actions[0],this_state1)
-            except:
-                state.phase = 2
-                all_possible_actions = SeegaRules.get_player_actions(state, this_players_id)
-                random.shuffle(all_possible_actions)
-                for action in all_possible_actions : 
-                    this_state=deepcopy(state)
-                    make_move = SeegaRules.act(this_state, action, this_players_id)
-                    #if make_move == False : continue
-                    yield (action, this_state)
+        # if state.in_hand == 0:
+        #     state.phase = 2
+        # if state.phase == 1:
+        #     this_state1 = deepcopy(state)
+        #     this_state2 = deepcopy(state)
+        #     try :      
+        #         actions = phase1(self,this_state1)
+        #         if len(actions) == 2 :
+        #             yield(actions[0], this_state1)
+        #             yield(actions[1], this_state1)
+        #         else:
+        #             yield(actions[0],this_state1)
+        #     except:
+        #         state.phase = 2
+        #         all_possible_actions = SeegaRules.get_player_actions(state, this_players_id)
+        #         #random.shuffle(all_possible_actions)
+        #         for action in all_possible_actions : 
+        #             this_state=deepcopy(state)
+        #             make_move = SeegaRules.act(this_state, action, this_players_id)
+        #             if make_move == False : continue
+        #             if SeegaRules.is_boring(this_state1) : continue
+        #             yield (action, this_state)
 
-        else:
-            all_possible_actions = SeegaRules.get_player_actions(state, this_players_id)
-            random.shuffle(all_possible_actions)
-            for action in all_possible_actions : 
-                this_state=deepcopy(state)
-                make_move = SeegaRules.act(this_state, action, this_players_id)
-                #if make_move == False : continue
-                yield (action, this_state)
+        # else:
+        all_possible_actions = SeegaRules.get_player_actions(state, this_players_id)
+        #random.shuffle(all_possible_actions)
+        for action in all_possible_actions : 
+            this_state=deepcopy(state)
+            make_move = SeegaRules.act(this_state, action, this_players_id)
+            if make_move == False : continue
+            if SeegaRules.is_boring(this_state) : continue
+            yield (action, this_state)
 
     """
     The cutoff function returns true if the alpha-beta/minimax
@@ -273,10 +278,10 @@ class AI(Player):
     The evaluate function must return an integer value
     representing the utility function of the board.
     """
-    def evaluate(self, state, booleane):
-        #print("EVALUATE")
+    def evaluate(self, state, condition):
+        print("EVALUATE")
         this_players_id = self.color.value
-        if booleane:
+        if condition:
             if state.score.get(this_players_id) == None:
                 return 0
             return 3*state.score.get(this_players_id)
@@ -313,51 +318,66 @@ inf = float("inf")
 
 def minimax_search(state, player, prune=True):
     """Perform a MiniMax/AlphaBeta search and return the best action.
-
     Arguments:
     state -- initial state
     player -- a concrete instance of class AI implementing an Alpha-Beta player
     prune -- whether to use AlphaBeta pruning
-
     """
+
     def max_value(state, alpha, beta, depth):
+        print("max_value",depth)
         if player.cutoff(state, depth):
+            print("cutoff_max")
             return player.evaluate(state, True), None
         val = -inf
         action = None
         for a, s in player.successors(state):
-            if s.get_latest_player() == s.get_next_player():  # next turn is for the same player
+            print("action_max", a)
+            if (
+                s.get_latest_player() == s.get_next_player()
+            ):  # next turn is for the same player
                 v, _ = max_value(s, alpha, beta, depth + 1)
-            else:                                             # next turn is for the other one
+            else:  # next turn is for the other one
                 v, _ = min_value(s, alpha, beta, depth + 1)
             if v > val:
+                print("v>val")
                 val = v
                 action = a
                 if prune:
                     if v >= beta:
                         return v, a
                     alpha = max(alpha, v)
+        print("val_action_max", val, action)
         return val, action
 
     def min_value(state, alpha, beta, depth):
-        
+        print("min_value",depth)
         if player.cutoff(state, depth):
-            return player.evaluate(state, False), None
+            print("cutoff_min")
+            return player.evaluate(state,False), None
         val = inf
         action = None
         for a, s in player.successors(state):
-            if s.get_latest_player() == s.get_next_player():  # next turn is for the same player
+            print("action_min", a)
+            if (
+                s.get_latest_player() == s.get_next_player()
+            ):  # next turn is for the same player
                 v, _ = min_value(s, alpha, beta, depth + 1)
-            else:                                             # next turn is for the other one
+            else:  # next turn is for the other one
                 v, _ = max_value(s, alpha, beta, depth + 1)
             if v < val:
+                print("v<val")
                 val = v
                 action = a
                 if prune:
                     if v <= alpha:
                         return v, a
                     beta = min(beta, v)
+        print("val_action_min", val, action)
         return val, action
+
+    _, action = max_value(state, -inf, inf, 0)
+    return action
 
     _, action = max_value(state, -inf, inf, 0)
     return action
