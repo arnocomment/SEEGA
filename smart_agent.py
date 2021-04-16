@@ -17,11 +17,7 @@ def phase1(self, state):
     liste = []
     booleane = False
     my_cells = board.get_player_pieces_on_board(mcolor)
-    #print("my_cells")
-    #print(my_cells)
     ennemy_cells = board.get_player_pieces_on_board(ecolor)
-    #print("ennemy_cells")
-    #print(ennemy_cells)
     empty_cases1 = cruise(shape,board)
     empty_cases2 = cruise2(shape,board,my_cells)
     if len(my_cells) > 0: 
@@ -32,8 +28,9 @@ def phase1(self, state):
     av_liste2 = good_emplacement_free2(board,mcolor,ecolor)
     av_liste3 = good_emplacement_free3(board,mcolor,ecolor)
     #av_liste = av_liste1 + av_liste2 + av_liste3
-    empty_special = empty_cases1 + empty_cases2 + av_liste3 + av_liste2 + av_liste1
+    empty_special = empty_cases1 + empty_cases2 + av_liste3 + av_liste1 + av_liste2
     empty_all = board.get_all_empty_cells_without_center()
+    random.shuffle(empty_all)
     # print("empty_special",empty_special)
     # print("empty_all",empty_all,len(empty_all))
     if len(empty_special)==0:
@@ -84,18 +81,22 @@ def cruise(shape,board):
 def cruise2(shape,board,my_cells):
     liste = []
     center = (shape[0] // 2, shape[1] // 2)
+    next_to_center = [(center[0]+1,center[1]),(center[0]-1,center[1]),(center[0],center[1]-1),(center[0],center[1]+1)]
+    for i in range(len(next_to_center)):
+        if next_to_center[i] in my_cells:
+            return liste
     if board.is_empty_cell((center[0]-1,shape[1]//2)):
-        if is_next_to((center[0]-1,shape[1]//2),my_cells)[0]==False:
-            liste.append((center[0]-1,shape[1]//2))
+        liste.append((center[0]-1,shape[1]//2))
+        return liste
     if board.is_empty_cell((center[0]+1,shape[1]//2)):
-        if is_next_to((center[0]+1,shape[1]//2),my_cells)[0]==False:
-            liste.append((center[0]+1,shape[1]//2))
+        liste.append((center[0]+1,shape[1]//2))
+        return liste
     if board.is_empty_cell((shape[0]//2,center[1]-1)):
-        if is_next_to((shape[0]//2,center[1]-1),my_cells)[0]==False:
-            liste.append((shape[0]//2,center[1]-1))
+        liste.append((shape[0]//2,center[1]-1))
+        return liste
     if board.is_empty_cell((shape[0]//2,center[1]+1)):
-        if is_next_to((shape[0]//2,center[1]+1),my_cells)[0]==False:
-            liste.append((shape[0]//2,center[1]+1))
+        liste.append((shape[0]//2,center[1]+1))
+        return liste
     return liste
 
 def next_to_cruise(shape,board):
@@ -131,7 +132,7 @@ def good_emplacement_free1(board,cells,e_cells):
     # print(empty_cells,cells)
     for i in range(0,len(cells)):
         #print(cells[i])
-        condition, delta_x, delta_y, to_add = is_next_to(cells[i], e_cells)
+        condition, delta_x, delta_y, to_add = is_next_to_2(cells[i], e_cells)
         if condition:
             possibilities = [(add_to_tuple(cells[i],to_add[0][0],to_add[0][1])),
                         (add_to_tuple(cells[i],to_add[1][0],to_add[1][1]))]
@@ -178,7 +179,18 @@ def good_emplacement_free3(board,mcolor,ecolor):
 def add_to_tuple(cell,a,b):
     return (cell[0]+a,cell[1]+b)
 
-def is_next_to(cell1, e_cells):
+def is_next_to_1(cell1, e_cells):
+    if add_to_tuple(cell1,1,0) in e_cells:
+        return True, 1, 0, [(2,1), (2,-1)]
+    if add_to_tuple(cell1,0,1) in e_cells:
+        return True, 0, 1, [(1,2), (-1,2)]
+    if add_to_tuple(cell1,-1,0) in e_cells:
+        return True, -1, 0, [(-2,-1), (-2,1)]
+    if add_to_tuple(cell1,0,-1) in e_cells:
+        return True, 0, -1, [(-1,-2), (1,-2)]
+    return False, None, None, None
+
+def is_next_to_2(cell1, e_cells):
     if add_to_tuple(cell1,1,0) in e_cells:
         return True, 1, 0, [(2,1), (2,-1)]
     if add_to_tuple(cell1,1,1) in e_cells:
@@ -212,13 +224,14 @@ class AI(Player):
         print("")
         print(f"Player {self.position} is playing.")
         print("time remain is ", remain_time, " seconds")
-        print("scores", state.score.get(self.color.value), state.score.get(-self.color.value))
+        #print("scores", state.score.get(self.color.value), state.score.get(-self.color.value))
         if state.phase == 1:
             this_state = deepcopy(state)
             return phase1(self, this_state)[0]
         else:
-            action = minimax_search(state, self)
-            print("end turn")
+            this_state = deepcopy(state)
+            action = minimax_search(this_state, self)
+            #print("end turn")
             return action
 
     """
@@ -226,14 +239,24 @@ class AI(Player):
     pairs (a, s) in which a is the action played to reach the
     state s.
     """
-    def successors(self, state):
+    def successors(self, state, condition):
         
         liste = []
-        this_player_id = self.color.value
-        mcolor = Color(self.color.value)
         board = state.get_board()
-        print("positions", this_player_id)
-        print(board.get_player_pieces_on_board(mcolor))
+        mcolor = Color(self.color.value)
+        this_player_id = self.color.value
+        # print("positions", this_player_id)
+        # print(board.get_player_pieces_on_board(mcolor))
+        # print("positions", -this_player_id)
+        # print(board.get_player_pieces_on_board(Color(-this_player_id)))
+        if condition :
+            this_player_id = self.color.value
+            mcolor = Color(self.color.value)
+        else:
+            this_player_id = -self.color.value
+            mcolor = Color(-self.color.value)
+            
+        
         all_possible_actions = SeegaRules.get_player_actions(state, this_player_id)
         random.shuffle(all_possible_actions)
         for action in all_possible_actions : 
@@ -243,7 +266,7 @@ class AI(Player):
             #if SeegaRules.is_boring(this_state1) : continue
             liste.append((action,this_state))
             #yield (action, this_state1)
-        print("len(actions)",len(liste))
+        #print("len(actions)",len(liste))
         return liste
 
     """
@@ -253,7 +276,7 @@ class AI(Player):
     def cutoff(self, state, depth):
         if SeegaRules.is_end_game(state) : 
             return True
-        if depth >= 3:
+        if depth >= 2:
             return True
         return False
         #return depth >= 2
@@ -264,11 +287,18 @@ class AI(Player):
     """
     def evaluate(self, state, condition):
         #print("EVALUATE")
+        board = state.get_board()
         this_player_id = self.color.value
+        mcolor = Color(this_player_id)
         my_score = state.score.get(this_player_id)
         e_score = state.score.get(-this_player_id)
-        print("scores", state.score.get(this_player_id), "-", state.score.get(-this_player_id))
+        # print("positions", this_player_id)
+        # print(board.get_player_pieces_on_board(mcolor))
+        # print("positions", -this_player_id)
+        # print(board.get_player_pieces_on_board(Color(-this_player_id)))
+        # print("score", state.score.get(this_player_id), "-", state.score.get(-this_player_id))
         comparison_scores = my_score > e_score
+        #return state.score.get(this_player_id)
         if condition:
             # if state.score.get(this_player_id) == None:
             #     return 0
@@ -313,17 +343,17 @@ def minimax_search(state, player, prune=True):
     """
 
     def max_value(state, alpha, beta, depth):
-        print("---------------------")
-        print("max_value",depth)
+        # print("---------------------")
+        # print("max_value",depth)
         if player.cutoff(state, depth):
-            #print("cutoff_max")
             evaluation = player.evaluate(state, True)
-            print("evaluate", evaluation)
+            #evaluation = player.evaluate(state)
+            #print("evaluate cutoff_max", evaluation)
             return evaluation, None
         val = -inf
         action = None
-        for a, s in player.successors(state):
-            print("action_max", a)
+        for a, s in player.successors(state, True):
+            #print("action_max", a)
             if (
                 s.get_latest_player() == s.get_next_player()
             ):  # next turn is for the same player
@@ -331,28 +361,28 @@ def minimax_search(state, player, prune=True):
             else:  # next turn is for the other one
                 v, _ = min_value(s, alpha, beta, depth + 1)
             if v > val:
-                print("v>val", v, val, alpha, beta)
+                #print("v>val", v, val, alpha, beta)
                 val = v
                 action = a
                 if prune:
                     if v >= beta:
                         return v, a
                     alpha = max(alpha, v)
-        print("val_action_max", val, action)
+        #print("val_action_max", val, action)
         return val, action
 
     def min_value(state, alpha, beta, depth):
-        print("---------------------")
-        print("min_value",depth)
+        # print("---------------------")
+        # print("min_value",depth)
         if player.cutoff(state, depth):
-            #print("cutoff_min")
             evaluation = player.evaluate(state, False)
-            print("evaluate", evaluation)
+            #evaluation = player.evaluate(state)
+            #print("evaluate cutoff_min", evaluation)
             return evaluation, None
         val = inf
         action = None
-        for a, s in player.successors(state):
-            print("action_min", a)
+        for a, s in player.successors(state, False):
+            #print("action_min", a)
             if (
                 s.get_latest_player() == s.get_next_player()
             ):  # next turn is for the same player
@@ -360,14 +390,14 @@ def minimax_search(state, player, prune=True):
             else:  # next turn is for the other one
                 v, _ = max_value(s, alpha, beta, depth + 1)
             if v < val:
-                print("v<val", v, val, alpha, beta)
+                #print("v<val", v, val, alpha, beta)
                 val = v
                 action = a
                 if prune:
                     if v <= alpha:
                         return v, a
                     beta = min(beta, v)
-        print("val_action_min", val, action)
+        #print("val_action_min", val, action)
         return val, action
 
     _, action = max_value(state, -inf, inf, 0)
