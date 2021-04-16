@@ -226,7 +226,6 @@ class AI(Player):
     """
     def successors(self, state):
         #print("latest move", state._latest_move)
-        this_players_id = self.color.value
         # if state.in_hand == 0:
         #     state.phase = 2
         # if state.phase == 1:
@@ -251,14 +250,21 @@ class AI(Player):
         #             yield (action, this_state)
 
         # else:
-        all_possible_actions = SeegaRules.get_player_actions(state, this_players_id)
-        #random.shuffle(all_possible_actions)
+        liste = []
+        this_players_id = self.color.value
+        this_state = deepcopy(state)
+        all_possible_actions = SeegaRules.get_player_actions(this_state, this_players_id)
+        random.shuffle(all_possible_actions)
         for action in all_possible_actions : 
-            this_state=deepcopy(state)
-            make_move = SeegaRules.act(this_state, action, this_players_id)
+            this_state1=deepcopy(this_state)
+            make_move = SeegaRules.act(this_state1, action, this_players_id)
             if make_move == False : continue
-            if SeegaRules.is_boring(this_state) : continue
-            yield (action, this_state)
+            if SeegaRules.is_boring(this_state1) : continue
+            print("action")
+            print(action)
+            liste.append((action,this_state1))
+            #yield (action, this_state1)
+        return liste
 
     """
     The cutoff function returns true if the alpha-beta/minimax
@@ -280,15 +286,20 @@ class AI(Player):
     """
     def evaluate(self, state, condition):
         print("EVALUATE")
-        this_players_id = self.color.value
+        this_player_id = self.color.value
+        my_score = state.score.get(this_player_id)
+        e_score = state.score.get(-this_player_id)
+        print(state.score.get(this_player_id))
+        print(state.score.get(-this_player_id))
+        comparison_scores = my_score > e_score
         if condition:
-            if state.score.get(this_players_id) == None:
-                return 0
-            return 3*state.score.get(this_players_id)
+            # if state.score.get(this_player_id) == None:
+            #     return 0
+            return state.score.get(this_player_id)
         else:
-            if state.score.get(-this_players_id) == None:
-                return 0
-            return state.score.get(-this_players_id)
+            # if state.score.get(-this_player_id) == None:
+            #     return 0
+            return state.score.get(-this_player_id)
 
     """
     Specific methods for a Seega player (do not modify)
@@ -331,8 +342,8 @@ def minimax_search(state, player, prune=True):
             return player.evaluate(state, True), None
         val = -inf
         action = None
-        for a, s in player.successors(state):
-            print("action_max", a)
+        for (a, s) in player.successors(state):
+            print("action_max + depth", a, depth)
             if (
                 s.get_latest_player() == s.get_next_player()
             ):  # next turn is for the same player
@@ -357,8 +368,8 @@ def minimax_search(state, player, prune=True):
             return player.evaluate(state,False), None
         val = inf
         action = None
-        for a, s in player.successors(state):
-            print("action_min", a)
+        for (a, s) in player.successors(state):
+            print("action_min + depth", a, depth)
             if (
                 s.get_latest_player() == s.get_next_player()
             ):  # next turn is for the same player
